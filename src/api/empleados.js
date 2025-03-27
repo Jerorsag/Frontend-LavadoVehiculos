@@ -1,5 +1,62 @@
 import apiClient from './config';
 
+// Función para obtener todos los empleados, manejando paginación automáticamente
+export const getAllEmpleados = async (params = {}) => {
+  try {
+    // Primer solicitud para obtener la primera página y el total
+    const response = await apiClient.get('/empleados/', { 
+      params: {
+        ...params,
+        page: 1,
+        page_size: 100 // Intentamos usar un tamaño de página grande para minimizar peticiones
+      } 
+    });
+    
+    let allEmpleados = response.data.results || [];
+    const totalCount = response.data.count || 0;
+    const pageSize = response.data.results ? response.data.results.length : 0;
+    
+    // Si hay más páginas, las obtenemos
+    if (totalCount > pageSize) {
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const additionalRequests = [];
+      
+      // Crear solicitudes para las páginas restantes
+      for (let page = 2; page <= totalPages; page++) {
+        additionalRequests.push(
+          apiClient.get('/empleados/', { 
+            params: {
+              ...params,
+              page: page,
+              page_size: pageSize
+            } 
+          })
+        );
+      }
+      
+      // Hacer todas las solicitudes en paralelo
+      const additionalResponses = await Promise.all(additionalRequests);
+      
+      // Agregar los resultados de cada página
+      for (const response of additionalResponses) {
+        if (response.data.results) {
+          allEmpleados = [...allEmpleados, ...response.data.results];
+        }
+      }
+    }
+    
+    // Devolver en un formato similar al original, pero con todos los empleados
+    return {
+      count: totalCount,
+      results: allEmpleados
+    };
+  } catch (error) {
+    console.error('Error al obtener todos los empleados:', error);
+    throw error;
+  }
+};
+
+// Función original para mantener compatibilidad
 export const getEmpleados = async (params = {}) => {
   try {
     const response = await apiClient.get('/empleados/', { params });

@@ -60,6 +60,16 @@ export const getInventario = async (params = {}) => {
   }
 };
 
+export const createInventario = async (inventarioData) => {
+  try {
+    const response = await apiClient.post('/inventario/', inventarioData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear registro de inventario:', error);
+    throw error;
+  }
+};
+
 export const updateInventario = async (id, inventarioData) => {
   try {
     const response = await apiClient.put(`/inventario/${id}/`, inventarioData);
